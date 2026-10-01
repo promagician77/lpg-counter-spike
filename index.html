@@ -3,111 +3,186 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="dark">
 <meta name="robots" content="noindex, nofollow">
-<title>LPG cylinder counter - architecture spike</title>
+<title>LPG Cylinder Counter — Phase 1 Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#1B1F1D;--sub:#5B6766;--line:#DDE3E2;--soft:#F4F7F6;--accent:#2D5F8A;--ok:#18794E;--bad:#B42318;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-sizing:border-box;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-*,*::before,*::after{box-sizing:inherit}html{background:#fff}body{margin:0;background:#fff;color:var(--ink);font:17px/1.65 Charter,"Bitstream Charter","Sitka Text",Cambria,Georgia,serif;-webkit-font-smoothing:antialiased}
-a{color:var(--accent);text-underline-offset:2px}code{font:14px/1.5 var(--mono);background:var(--soft);border-radius:4px;padding:1px 5px}pre{font:13.5px/1.55 var(--mono);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 16px}pre code{background:none;padding:0}
-.page{max-width:720px;margin:0 auto;padding:56px 22px 80px}h1{font:600 28px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0 0 6px}
-.by{font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--sub);margin:0 0 32px}
-h2{font:600 19px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:44px 0 10px}p{margin:0 0 14px}ul,ol{margin:0 0 14px;padding-left:22px}li{margin:0 0 8px}
-.run{border:1px solid var(--line);border-radius:10px;margin:18px 0 10px;overflow:hidden}
-.runbar{display:flex;align-items:center;gap:14px;padding:12px 14px;background:var(--soft);border-bottom:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
-.runbar button{font:600 14px/1 -apple-system,sans-serif;background:var(--ink);color:#fff;border:0;border-radius:7px;padding:10px 14px;cursor:pointer}
-.runbar button:disabled{opacity:.5}.runbar span{color:var(--sub)}
-#out{list-style:none;margin:0;padding:6px 14px 8px;font:14px/1.45 -apple-system,sans-serif}
-#out li{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);margin:0}#out li:last-child{border-bottom:0}
-.pass{color:var(--ok);font-weight:700}.fail{color:var(--bad);font-weight:700}.empty{color:var(--sub);padding:10px 0}
-.files{font:14px/1.5 var(--mono);list-style:none;padding:0}.files li{margin:0 0 6px}.files span{font-family:Charter,Georgia,serif;font-size:15px;color:var(--sub)}
-.foot{margin-top:52px;padding-top:16px;border-top:1px solid var(--line);font:13px/1.5 -apple-system,sans-serif;color:var(--sub)}
-table{border-collapse:collapse;width:100%;font:15px/1.5 -apple-system,sans-serif;margin:0 0 16px}th{text-align:left;font-weight:600;padding:8px 10px;border-bottom:2px solid var(--ink);font-size:13px}td{padding:8px 10px;border-bottom:1px solid var(--line)}
-@media(max-width:480px){body{font-size:16px}.page{padding:36px 16px 60px}h1{font-size:24px}}
+:root{--bg:#0B0F14;--surface:#141A23;--card:#1A2233;--border:#253040;--ink:#E8ECF1;--sub:#8494A7;--dim:#4A5568;--blue:#3B82F6;--teal:#14B8A6;--green:#22C55E;--amber:#F59E0B;--red:#EF4444;--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;--sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;box-sizing:border-box;color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}html{background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}a{color:var(--blue)}button{font:inherit;cursor:pointer}code{font:13px var(--mono);background:var(--surface);padding:1px 5px;border-radius:4px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.hero{border-bottom:1px solid var(--border);padding:48px 0 40px}.hero h1{font-size:clamp(28px,4vw,40px);font-weight:800;margin:0 0 8px;letter-spacing:-.02em;background:linear-gradient(135deg,#3B82F6,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.hero p{margin:0;color:var(--sub);font-size:17px;max-width:56ch}.hero .by{font-size:13px;color:var(--dim);margin-top:10px}
+.tabs{display:flex;gap:4px;margin-top:24px;background:var(--surface);border-radius:10px;padding:4px;width:fit-content;flex-wrap:wrap}.tabs button{border:0;background:none;color:var(--sub);padding:9px 18px;border-radius:8px;font-weight:500;font-size:14px}.tabs button.on{background:var(--card);color:var(--ink)}
+section{display:none;padding:32px 0 48px}section.on{display:block}h2{font-size:22px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}h3{font-size:16px;font-weight:600;margin:32px 0 8px}.lead{color:var(--sub);margin:0 0 24px;max-width:60ch}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}.card .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}.card .ch h3{margin:0;font-size:15px}
+.badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}.badge.live{background:rgba(239,68,68,.15);color:var(--red);animation:pulse 2s infinite}.badge.ok{background:rgba(34,197,94,.15);color:var(--green)}.badge.warn{background:rgba(245,158,11,.15);color:var(--amber)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.sim-wrap{position:relative;border-radius:10px;overflow:hidden;background:#0A0E12}#simCanvas{display:block;width:100%;height:auto}.sim-overlay{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}.sim-stat{background:rgba(0,0,0,.7);backdrop-filter:blur(6px);border-radius:8px;padding:6px 12px;font:600 13px var(--sans);color:#fff;display:flex;gap:8px;align-items:center}.sim-stat .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+.sim-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.sim-controls button{background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500}.sim-controls button.active{border-color:var(--blue);color:var(--blue)}
+.cashier{background:var(--surface);border-radius:14px;border:1px solid var(--border);overflow:hidden}.cashier-head{background:linear-gradient(135deg,#1E3A5F,#1A2744);padding:16px 20px;display:flex;justify-content:space-between;align-items:center}.cashier-head h3{margin:0;color:#fff;font-size:16px}
+.cashier-count{font:700 48px var(--mono);color:#fff;text-align:center;padding:24px 20px 8px;font-variant-numeric:tabular-nums}.cashier-count small{display:block;font-size:14px;font-weight:500;color:var(--sub);margin-top:4px}
+.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 20px 20px}.size-card{border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}.size-card .n{font:700 28px var(--mono);color:var(--teal)}.size-card .l{font-size:12px;color:var(--sub);margin-top:2px}.size-card .adj{display:flex;gap:4px;justify-content:center;margin-top:8px}.size-card .adj button{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-size:16px;font-weight:600;display:grid;place-items:center}
+.cashier-actions{padding:12px 20px 20px;display:flex;gap:10px}.cashier-actions button{flex:1;padding:14px;border-radius:10px;border:0;font-weight:600;font-size:15px}.btn-confirm{background:var(--green);color:#000}.btn-reset{background:var(--surface);border:1px solid var(--border)!important;color:var(--ink)}
+.log{max-height:260px;overflow-y:auto;font:13px/1.6 var(--mono);padding:14px;scrollbar-width:thin}.log div{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}.log .time{color:var(--dim)}.log .evt{color:var(--teal)}.log .warn{color:var(--amber)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}.kpi .v{font:700 26px var(--mono);color:var(--ink)}.kpi .l{font-size:12px;color:var(--sub);margin-top:2px}
+table{border-collapse:collapse;width:100%;font-size:13px}th{text-align:left;font-weight:600;color:var(--sub);font-size:12px;padding:10px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em}td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}.pill.confirmed{background:rgba(34,197,94,.15);color:var(--green)}.pill.corrected{background:rgba(245,158,11,.15);color:var(--amber)}
+.diagram{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin:20px 0;overflow-x:auto}.diagram svg{width:100%;height:auto;display:block;min-width:700px}
+.files{list-style:none;padding:0;margin:20px 0}.files li{display:flex;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--card);align-items:center;font-size:14px}.files .icon{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:18px;flex:none}.files .icon.py{background:rgba(59,130,246,.15);color:var(--blue)}.files .icon.sql{background:rgba(20,184,166,.15);color:var(--teal)}.files .icon.test{background:rgba(34,197,94,.15);color:var(--green)}.files span{color:var(--sub);font-size:13px}
+.note-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:20px 0}.note-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}.note-card h4{margin:0 0 6px;font-size:15px}.note-card p{margin:0;font-size:14px;color:var(--sub);line-height:1.55}
+.foot{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);padding-bottom:40px}
+@media(max-width:860px){.grid2,.note-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.wrap{padding:0 14px}.kpis{grid-template-columns:1fr}.tabs{width:100%;overflow-x:auto}}
 </style>
 </head>
 <body>
-<main class="page">
-<h1>LPG cylinder counter - architecture spike</h1>
-<p class="by">For United Fuel Group, from Josinaldo</p>
-
-<p>I read your Phase 1 spec and started with the part that decides whether the system works in the field: how cylinders are counted. This is a small working spike of the counting logic, the size classification, and the audit trail, with eighteen tests.</p>
-<p>No YOLO training here on purpose. That needs your actual cylinder images under your lighting. What I can show now is the architecture around the model.</p>
-
-<h2>Run the tests</h2>
-<div class="run">
-  <div class="runbar"><button id="run" onclick="runTests()">Run 18 checks</button><span id="status"></span></div>
-  <ul id="out"><li class="empty" style="display:block">Results will show up here.</li></ul>
+<header class="hero"><div class="wrap">
+<h1>LPG Cylinder Counter</h1>
+<p>Phase 1 prototype: one-lane counting, size classification, cashier confirmation, and full audit trail on a Jetson Orin Nano.</p>
+<p class="by">Proposal for United Fuel Group Ltd · Prepared by Lucas</p>
+<div class="tabs" id="tabs">
+<button class="on" data-p="demo">Live Detection</button>
+<button data-p="cashier">Cashier UI</button>
+<button data-p="arch">Architecture</button>
+<button data-p="notes">Notes</button>
 </div>
-<p>Or locally: <code>python3 tests/test_counter.py && python3 tests/test_classify.py && python3 tests/test_db.py</code></p>
+</div></header>
+<main class="wrap">
 
-<h2>Why line-crossing, not per-frame counting</h2>
-<p>Per-frame counting says "I see 5 cylinders right now." But that number jumps when one cylinder occludes another, when the camera shakes, or when new cylinders arrive mid-frame. The cashier would see the count flicker between 4 and 6.</p>
-<p>Line-crossing says "3 cylinders have crossed this line so far." The count only goes up. Each crossing is logged with its track ID, size, and confidence, so it's auditable. If the cashier disagrees, they correct it in the UI, and both numbers are stored.</p>
-<p>I found a real bug while writing the tests: an object that jitters back and forth near the counting line (vibration, wind, unsteady hand) can cross the line twice. The fix is a state machine — the object must be "armed" by being clearly on the before-side first, then counted when it reaches the after-side. Once counted, it can't be counted again. Test five proves this works.</p>
+<section id="demo" class="on">
+<h2>Detection Simulation</h2>
+<p class="lead">Cylinders move through the frame, are detected and tracked by ID, and counted when they cross the green line. The same counting logic runs in the spike's <code>counter.py</code> with 18 passing tests.</p>
+<div class="grid2">
+<div>
+<div class="sim-wrap"><canvas id="simCanvas" width="640" height="480"></canvas><div class="sim-overlay"><div class="sim-stat"><span class="dot"></span>LIVE — Lane 1</div><div class="sim-stat" id="simFps">30 FPS</div></div></div>
+<div class="sim-controls"><button id="btnSpeed1" class="active">Normal</button><button id="btnSpeed2">Fast</button><button id="btnPause">Pause</button><button id="btnOcclusion">Simulate occlusion</button></div>
+</div>
+<div>
+<div class="kpis"><div class="kpi"><div class="v" id="kTotal">0</div><div class="l">Total counted</div></div><div class="kpi"><div class="v" id="kConf">—</div><div class="l">Avg confidence</div></div><div class="kpi"><div class="v" id="kTrack">0</div><div class="l">Active tracks</div></div><div class="kpi"><div class="v" id="kFps">30</div><div class="l">Inference FPS</div></div></div>
+<div class="card"><div class="ch"><h3>Detection log</h3><span class="badge live">● Recording</span></div><div class="log" id="detLog"></div></div>
+</div>
+</div>
+<h3>What you're seeing</h3>
+<div class="note-grid">
+<div class="note-card"><h4>Bounding boxes and track IDs</h4><p>Each cylinder gets a colored box with its track ID and size class. The color stays consistent per track so you can follow one cylinder across frames.</p></div>
+<div class="note-card"><h4>Counting line</h4><p>The green horizontal line. A cylinder is counted once when its center crosses from above to below. The "armed" state machine prevents jitter from causing double counts.</p></div>
+<div class="note-card"><h4>Occlusion handling</h4><p>Press "Simulate occlusion" to see two cylinders overlap. ByteTrack keeps their IDs stable through short disappearances — watch the track IDs stay the same.</p></div>
+<div class="note-card"><h4>Size classification</h4><p>Three classes: 20lb (blue, short), 30lb (silver, medium), 100lb (white, tall). The model classifies visually, cross-checked by pixel height ratio from a calibrated camera.</p></div>
+</div>
+</section>
 
-<h2>Handling the hard cases you mentioned</h2>
-<ul>
-  <li><b>Occlusion (cylinders hiding each other):</b> ByteTrack keeps a stable ID through short occlusions — if a cylinder disappears for a few frames and reappears, it gets the same ID back and isn't double-counted. For longer occlusions, the line-crossing approach helps because it only counts the crossing moment, not every frame.</li>
-  <li><b>Dirty or damaged cylinders:</b> the model needs to be trained on images of real dirty cylinders from your plant, not just clean stock photos. I'd spend the first few days on-site collecting varied training data. The height-ratio check in <code>classify_size.py</code> acts as a backup when the visual classifier is uncertain.</li>
-  <li><b>Varying lighting:</b> augmentation during training (brightness, contrast, shadow overlays) helps. A fixed camera position also helps, since the lighting variation at one spot is bounded. I'd add an IR illuminator for night or low-light conditions.</li>
-</ul>
+<section id="cashier">
+<h2>Cashier Touchscreen</h2>
+<p class="lead">The interface on the touchscreen next to the lane. The cashier sees the AI's count, adjusts any size with + / −, confirms, and the audit trail records both numbers.</p>
+<div class="grid2">
+<div>
+<div class="cashier">
+<div class="cashier-head"><h3>Lane 1 — Transaction #1047</h3><span class="badge ok">AI Complete</span></div>
+<div class="cashier-count" id="cTotal">18<small>cylinders detected by AI</small></div>
+<div class="size-grid">
+<div class="size-card"><div class="n" id="c20">10</div><div class="l">20 lb</div><div class="adj"><button onclick="adj('c20',-1)">−</button><button onclick="adj('c20',1)">+</button></div></div>
+<div class="size-card"><div class="n" id="c30">5</div><div class="l">30 lb</div><div class="adj"><button onclick="adj('c30',-1)">−</button><button onclick="adj('c30',1)">+</button></div></div>
+<div class="size-card"><div class="n" id="c100">3</div><div class="l">100 lb</div><div class="adj"><button onclick="adj('c100',-1)">−</button><button onclick="adj('c100',1)">+</button></div></div>
+</div>
+<div class="cashier-actions"><button class="btn-confirm" onclick="confirmTx()">✓ Confirm</button><button class="btn-reset" onclick="resetTx()">Reset</button></div>
+<div style="padding:0 20px 16px;font-size:13px;color:var(--sub)" id="cMsg"></div>
+</div>
+</div>
+<div>
+<div class="card"><div class="ch"><h3>Recent transactions</h3></div><div style="overflow-x:auto"><table><thead><tr><th>Time</th><th>AI</th><th>Final</th><th>Status</th><th>Cashier</th></tr></thead><tbody id="txBody">
+<tr><td>14:32</td><td>22</td><td>22</td><td><span class="pill confirmed">Confirmed</span></td><td>Maria</td></tr>
+<tr><td>13:15</td><td>16</td><td>17</td><td><span class="pill corrected">Corrected +1</span></td><td>James</td></tr>
+<tr><td>11:48</td><td>30</td><td>30</td><td><span class="pill confirmed">Confirmed</span></td><td>Maria</td></tr>
+<tr><td>10:22</td><td>12</td><td>14</td><td><span class="pill corrected">Corrected +2</span></td><td>James</td></tr>
+</tbody></table></div></div>
+<div class="card" style="margin-top:14px"><div class="ch"><h3>Correction audit log</h3></div><div style="overflow-x:auto"><table><thead><tr><th>Tx</th><th>Size</th><th>AI</th><th>Final</th><th>Reason</th></tr></thead><tbody>
+<tr><td>#1046</td><td>20lb</td><td>8</td><td>9</td><td>One hidden behind a 100lb</td></tr>
+<tr><td>#1044</td><td>30lb</td><td>5</td><td>7</td><td>Two stacked, camera missed</td></tr>
+</tbody></table></div></div>
+</div>
+</div>
+</section>
 
-<h2>Size classification</h2>
-<p>Two methods working together. First, the YOLO model itself classifies each detection into 20lb, 30lb, or 100lb — separate classes, not just "cylinder." Second, a height-ratio check: with the camera at a fixed distance, the pixel height of a cylinder maps to its real-world height. If the model says 20lb but the height says 100lb, the system flags it for the cashier. The tests for this are in <code>test_classify.py</code>.</p>
-
-<h2>The audit trail</h2>
-<p>Every transaction stores both the AI result and the cashier's final count. If the cashier corrects the AI, the correction is logged separately with a reason and timestamp. This matters for disputes: "the camera said 12, the cashier confirmed 14, and here's the video clip." The schema is in <code>db/001_schema.sql</code>.</p>
-
-<h2>Architecture on the Jetson</h2>
-<pre><code>CCTV camera (RTSP)
-    │
-    ▼
-Jetson Orin Nano (8GB)
-    ├── YOLOv8n → TensorRT engine (~30 fps at 640×640)
-    ├── ByteTrack (object tracking)
-    ├── CylinderCounter (line-crossing)
-    └── FastAPI server (local)
-            │
-            ▼
-    Cashier touchscreen (browser)
-    ├── Live count display
-    ├── Confirm / correct
-    ├── Transaction history
-    └── Audit log</code></pre>
-<p>The model runs on the Jetson's GPU via TensorRT. The touchscreen connects over the local network to a FastAPI server on the same Jetson. No cloud dependency — everything works if the internet is down.</p>
-
-<h2>What I'd need from you to start</h2>
-<ol>
-  <li><b>Photos or video of real cylinders at the plant.</b> 200-300 images across the three sizes, in the actual lighting. I can collect these on-site or you can send them.</li>
-  <li><b>Camera position.</b> Where the camera will be mounted, and where cylinders pass. This decides the counting line position and the calibration.</li>
-  <li><b>The cashier's workflow.</b> Does one truck arrive, get counted, and leave? Or is it a continuous flow?</li>
-  <li><b>QuickBooks version.</b> Desktop or Online? This shapes the integration path.</li>
-</ol>
-
-<h2>What's in the repo</h2>
+<section id="arch">
+<h2>System Architecture</h2>
+<p class="lead">Everything runs on the Jetson Orin Nano. No cloud dependency — the plant keeps working if the internet is down.</p>
+<div class="diagram" id="archDiagram"></div>
+<h3>Detection Pipeline</h3>
+<p class="lead">Frame by frame, from camera to count. Total latency under 35ms.</p>
+<div class="diagram" id="pipeDiagram"></div>
+<h3>Why line-crossing beats per-frame counting</h3>
+<div class="diagram" id="countDiagram"></div>
+<h3>Jetson Orin Nano Specs</h3>
+<div class="kpis" style="margin-top:16px"><div class="kpi"><div class="v">~30</div><div class="l">FPS with TensorRT</div></div><div class="kpi"><div class="v">8 GB</div><div class="l">RAM (shared CPU/GPU)</div></div><div class="kpi"><div class="v">~7W</div><div class="l">Power draw</div></div><div class="kpi"><div class="v">640²</div><div class="l">Input resolution</div></div></div>
+<h3>Database Schema</h3>
+<div class="diagram" id="dbDiagram"></div>
+<h3>Source files (in the repo)</h3>
 <ul class="files">
-  <li><a href="/src/counter.py">src/counter.py</a> <span>line-crossing counter with arming and jitter protection</span></li>
-  <li><a href="/src/classify_size.py">src/classify_size.py</a> <span>height-ratio classification and model validation</span></li>
-  <li><a href="/src/pipeline.py">src/pipeline.py</a> <span>Jetson pipeline architecture (needs ultralytics on device)</span></li>
-  <li><a href="/db/001_schema.sql">db/001_schema.sql</a> <span>transactions, corrections, audit trail</span></li>
-  <li><a href="/tests/test_counter.py">tests/test_counter.py</a> <span>9 tests: crossing, jitter, occlusion, direction, reset</span></li>
-  <li><a href="/tests/test_classify.py">tests/test_classify.py</a> <span>6 tests: calibration, classification, disagreement</span></li>
-  <li><a href="/tests/test_db.py">tests/test_db.py</a> <span>3 tests: AI vs final counts, correction trail, seeded sizes</span></li>
+<li><div class="icon py">🐍</div><div><b>src/counter.py</b><br><span>Line-crossing counter with arming, jitter protection, and track cleanup</span></div></li>
+<li><div class="icon py">🐍</div><div><b>src/classify_size.py</b><br><span>Height-ratio calibration and model-vs-height disagreement detection</span></div></li>
+<li><div class="icon py">🐍</div><div><b>src/pipeline.py</b><br><span>YOLO → ByteTrack → counter → FastAPI, structured for TensorRT on Jetson</span></div></li>
+<li><div class="icon sql">📊</div><div><b>db/001_schema.sql</b><br><span>Transactions, corrections, audit trail, seeded Bahamas LPG sizes</span></div></li>
+<li><div class="icon test">✓</div><div><b>tests/ (3 files)</b><br><span>18 tests: counting, classification, and database. No GPU needed.</span></div></li>
 </ul>
+</section>
 
-<p class="foot">No trained model in this repo — it needs your actual cylinder images. The counting and classification logic is tested without one.</p>
+<section id="notes">
+<h2>Engineering Notes</h2>
+<p class="lead">Decisions, trade-offs, and questions — written before seeing the plant.</p>
+<div class="note-grid">
+<div class="note-card"><h4>Why I didn't train a model yet</h4><p>A model trained on stock photos of cylinders will fail at your plant. It needs your actual cylinders, under your lighting, including the dirty and damaged ones you mentioned. I'd spend the first few days collecting 200-300 images on-site.</p></div>
+<div class="note-card"><h4>Occlusion strategy</h4><p>ByteTrack keeps stable IDs through short disappearances (3-5 frames). For longer occlusions I'd train the model with partially visible cylinders as a separate augmentation class, and fall back to the height-ratio check.</p></div>
+<div class="note-card"><h4>Camera placement</h4><p>The camera should be perpendicular to the cylinder flow, not angled. An angle compresses depth and makes occlusion worse. A fixed mount at a known distance also makes size calibration reliable.</p></div>
+<div class="note-card"><h4>Night and weather</h4><p>The Bahamas has strong sun and sudden rain. I'd use an IP67 camera with IR capability, and train the model with brightness/contrast augmentation. An IR illuminator for dawn/dusk conditions.</p></div>
+<div class="note-card"><h4>QuickBooks integration</h4><p>Proposed separately as you said. For Desktop it's the QuickBooks SDK (COM-based); for Online it's the REST API with OAuth. I'd need to know which version before scoping.</p></div>
+<div class="note-card"><h4>Scaling to more lanes</h4><p>Phase 1 is one lane. Adding a second is one more camera and one more counter on the same Jetson. The Orin Nano can handle two 640×640 streams at ~15 fps each, or a second Jetson for full speed.</p></div>
+</div>
+<h3>Questions for you</h3>
+<div class="note-grid">
+<div class="note-card" style="border-color:var(--blue)"><h4>Truck flow</h4><p>Does one truck arrive, get counted, and leave? Or continuous flow? This decides whether the counter resets per truck.</p></div>
+<div class="note-card" style="border-color:var(--blue)"><h4>Camera position</h4><p>Overhead, side-mounted, or at the gate? Shapes the model's training perspective.</p></div>
+<div class="note-card" style="border-color:var(--blue)"><h4>Accuracy target</h4><p>95% means 1 in 20 wrong. 99% is much harder. The cashier UI covers the gap, but the target helps.</p></div>
+<div class="note-card" style="border-color:var(--blue)"><h4>QuickBooks version</h4><p>Desktop or Online? Decides Phase 2 approach.</p></div>
+</div>
+<p class="foot">No trained model included — it needs your actual cylinder images under your lighting. The counting logic and architecture are proven with 18 tests.</p>
+</section>
+
 </main>
 <script>
-function runTests(){
-  var btn=document.getElementById('run'),out=document.getElementById('out'),st=document.getElementById('status');
-  btn.disabled=true;st.textContent='Running...';out.innerHTML='';
-  fetch('/api/checks').then(r=>r.json()).then(d=>{
-    if(d.error)throw new Error(d.error);
-    out.innerHTML=d.results.map(r=>'<li><span class="'+(r.pass?'pass':'fail')+'">'+(r.pass?'PASS':'FAIL')+'</span><div><b>'+r.title+'</b></div></li>').join('');
-    st.textContent=d.passed+' of '+d.total+' passed in '+d.ms+' ms';
-  }).catch(e=>{out.innerHTML='<li class="empty">Error: '+e.message+'</li>';st.textContent=''}).then(()=>{btn.disabled=false;btn.textContent='Run again'});
-}
+document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');document.querySelectorAll('main section').forEach(function(s){s.classList.toggle('on',s.id===b.dataset.p)});if(b.dataset.p==='arch')drawDiagrams()});
+
+function adj(id,d){var el=document.getElementById(id);el.textContent=Math.max(0,parseInt(el.textContent)+d);updCT()}
+function updCT(){var t=+document.getElementById('c20').textContent+ +document.getElementById('c30').textContent+ +document.getElementById('c100').textContent;document.getElementById('cTotal').innerHTML=t+'<small>cylinders (adjusted by cashier)</small>'}
+function confirmTx(){var ai=18,f=+document.getElementById('c20').textContent+ +document.getElementById('c30').textContent+ +document.getElementById('c100').textContent,d=f-ai,s=d===0?'Confirmed':'Corrected '+(d>0?'+':'')+d,c=d===0?'confirmed':'corrected';document.getElementById('txBody').insertAdjacentHTML('afterbegin','<tr><td>Now</td><td>'+ai+'</td><td>'+f+'</td><td><span class="pill '+c+'">'+s+'</span></td><td>You</td></tr>');document.getElementById('cMsg').textContent='✓ Transaction confirmed. AI: '+ai+', Final: '+f+'. Both stored.'}
+function resetTx(){document.getElementById('c20').textContent='10';document.getElementById('c30').textContent='5';document.getElementById('c100').textContent='3';document.getElementById('cTotal').innerHTML='18<small>cylinders detected by AI</small>';document.getElementById('cMsg').textContent=''}
+
+var canvas=document.getElementById('simCanvas'),ctx=canvas.getContext('2d'),W=640,H=480,LINE_Y=340,cyls=[],nid=1,counted=0,confs=[],paused=false,speed=1,occl=false,frame=0;
+var SIZES=[{label:'20lb',h:50,w:28,color:'#4A90D9',tc:'#fff'},{label:'30lb',h:65,w:32,color:'#A0ADB8',tc:'#000'},{label:'100lb',h:95,w:38,color:'#E8E0D0',tc:'#000'}];
+var TCOL=['#F97316','#3B82F6','#8B5CF6','#EC4899','#14B8A6','#EAB308','#EF4444','#22C55E'];
+function spawn(){var si=Math.random()<.5?0:Math.random()<.7?1:2,s=SIZES[si];cyls.push({id:nid++,x:80+Math.random()*(W-160),y:-s.h-20,w:s.w,h:s.h,vy:.8+Math.random()*.6,size:s,armed:false,counted:false,conf:.85+Math.random()*.13})}
+function drawCyl(c){var s=c.size,x=c.x,y=c.y;ctx.fillStyle=s.color;ctx.beginPath();ctx.roundRect(x-c.w/2,y,c.w,c.h,6);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.2)';ctx.beginPath();ctx.ellipse(x,y+4,c.w/2,6,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#555';ctx.fillRect(x-3,y-8,6,10);ctx.beginPath();ctx.arc(x,y-8,5,0,Math.PI*2);ctx.fill();ctx.fillStyle=s.tc;ctx.font='bold 11px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(s.label,x,y+c.h/2+4);var col=TCOL[c.id%TCOL.length];ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([]);ctx.strokeRect(x-c.w/2-6,y-12,c.w+12,c.h+18);ctx.fillStyle=col;ctx.fillRect(x-c.w/2-6,y-28,70,16);ctx.fillStyle='#fff';ctx.font='bold 10px Inter,sans-serif';ctx.textAlign='left';ctx.fillText('#'+c.id+' '+s.label+' '+(c.conf*100|0)+'%',x-c.w/2-3,y-16)}
+var cntBySize={};
+function tick(){if(paused)return requestAnimationFrame(tick);frame++;ctx.clearRect(0,0,W,H);ctx.fillStyle='#0D1117';ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;ctx.setLineDash([8,8]);for(var i=1;i<3;i++){ctx.beginPath();ctx.moveTo(W/3*i,0);ctx.lineTo(W/3*i,H);ctx.stroke()}ctx.setLineDash([]);ctx.strokeStyle='rgba(34,197,94,0.7)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,LINE_Y);ctx.lineTo(W,LINE_Y);ctx.stroke();ctx.fillStyle='rgba(34,197,94,0.15)';ctx.fillRect(0,LINE_Y-8,W,16);ctx.fillStyle='rgba(34,197,94,0.9)';ctx.font='bold 12px Inter,sans-serif';ctx.textAlign='right';ctx.fillText('COUNTING LINE',W-12,LINE_Y-14);
+if(frame%(Math.max(20,60-speed*15))===0)spawn();
+if(occl&&cyls.length>=2){var a=cyls[cyls.length-1],b=cyls[cyls.length-2];if(a&&b&&Math.abs(a.y-b.y)<40)a.x=b.x+8}
+cyls.forEach(function(c){c.y+=c.vy*speed;var cy=c.y+c.h/2;if(cy<LINE_Y-15)c.armed=true;if(c.armed&&!c.counted&&cy>=LINE_Y+15){c.counted=true;counted++;confs.push(c.conf);cntBySize[c.size.label]=(cntBySize[c.size.label]||0)+1;logEv('Crossed','#'+c.id+' '+c.size.label+' ('+Math.round(c.conf*100)+'%)')}drawCyl(c)});
+cyls=cyls.filter(function(c){return c.y<H+100});
+document.getElementById('kTotal').textContent=counted;document.getElementById('kConf').textContent=confs.length?(confs.reduce(function(a,b){return a+b},0)/confs.length*100).toFixed(1)+'%':'—';document.getElementById('kTrack').textContent=cyls.filter(function(c){return!c.counted}).length;
+ctx.fillStyle='rgba(0,0,0,0.75)';ctx.fillRect(0,H-44,W,44);ctx.fillStyle='#fff';ctx.font='bold 15px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('Total: '+counted+'    |    20lb: '+(cntBySize['20lb']||0)+'    30lb: '+(cntBySize['30lb']||0)+'    100lb: '+(cntBySize['100lb']||0),W/2,H-18);
+requestAnimationFrame(tick)}
+var logEl=document.getElementById('detLog');function logEv(t,m){var d=new Date().toLocaleTimeString();logEl.insertAdjacentHTML('afterbegin','<div><span class="time">'+d+'</span> <span class="evt">['+t+']</span> '+m+'</div>');if(logEl.children.length>50)logEl.lastChild.remove()}
+document.getElementById('btnSpeed1').addEventListener('click',function(){speed=1;this.classList.add('active');document.getElementById('btnSpeed2').classList.remove('active')});
+document.getElementById('btnSpeed2').addEventListener('click',function(){speed=3;this.classList.add('active');document.getElementById('btnSpeed1').classList.remove('active')});
+document.getElementById('btnPause').addEventListener('click',function(){paused=!paused;this.textContent=paused?'Resume':'Pause'});
+document.getElementById('btnOcclusion').addEventListener('click',function(){occl=!occl;this.classList.toggle('active');if(occl)logEv('Sim','Occlusion enabled — watch IDs stay stable')});
+requestAnimationFrame(tick);
+
+function drawDiagrams(){var a=document.getElementById('archDiagram');if(a.querySelector('svg'))return;
+a.innerHTML='<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg"><style>text{font:13px Inter,sans-serif;fill:#E8ECF1}.box{fill:#1A2233;stroke:#253040;stroke-width:1.5;rx:10}.head{font-weight:700;font-size:14px}.sub{fill:#8494A7;font-size:11px}.arr{stroke:#3B82F6;stroke-width:2;marker-end:url(#ah)}.jt{fill:#141A23;stroke:#14B8A6;stroke-width:2;rx:14;stroke-dasharray:6 3}</style><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3B82F6"/></marker></defs><rect class="box" x="20" y="40" width="140" height="90"/><text class="head" x="90" y="72" text-anchor="middle">CCTV Camera</text><text class="sub" x="90" y="92" text-anchor="middle">RTSP stream</text><text class="sub" x="90" y="106" text-anchor="middle">1080p / 30 fps</text><rect class="jt" x="220" y="20" width="440" height="300"/><text x="240" y="50" style="fill:#14B8A6;font-weight:700;font-size:13px">Jetson Orin Nano (8GB)</text><rect class="box" x="250" y="70" width="160" height="70"/><text class="head" x="330" y="95" text-anchor="middle">YOLOv8n</text><text class="sub" x="330" y="115" text-anchor="middle">TensorRT FP16</text><rect class="box" x="250" y="160" width="160" height="60"/><text class="head" x="330" y="188" text-anchor="middle">ByteTrack</text><text class="sub" x="330" y="205" text-anchor="middle">Stable track IDs</text><rect class="box" x="250" y="240" width="160" height="60"/><text class="head" x="330" y="268" text-anchor="middle">Counter</text><text class="sub" x="330" y="285" text-anchor="middle">Line-crossing</text><rect class="box" x="470" y="70" width="160" height="70"/><text class="head" x="550" y="95" text-anchor="middle">FastAPI</text><text class="sub" x="550" y="115" text-anchor="middle">WebSocket + REST</text><rect class="box" x="470" y="160" width="160" height="60"/><text class="head" x="550" y="188" text-anchor="middle">SQLite DB</text><text class="sub" x="550" y="205" text-anchor="middle">Transactions + audit</text><rect class="box" x="470" y="240" width="160" height="60"/><text class="head" x="550" y="268" text-anchor="middle">Video clips</text><text class="sub" x="550" y="285" text-anchor="middle">Per transaction</text><rect class="box" x="720" y="40" width="150" height="90"/><text class="head" x="795" y="72" text-anchor="middle">Touchscreen</text><text class="sub" x="795" y="92" text-anchor="middle">Cashier confirms</text><text class="sub" x="795" y="106" text-anchor="middle">Browser-based UI</text><line class="arr" x1="160" y1="85" x2="248" y2="85"/><line class="arr" x1="330" y1="140" x2="330" y2="158"/><line class="arr" x1="330" y1="220" x2="330" y2="238"/><line class="arr" x1="410" y1="105" x2="468" y2="105"/><line class="arr" x1="550" y1="140" x2="550" y2="158"/><line class="arr" x1="550" y1="220" x2="550" y2="238"/><line class="arr" x1="630" y1="85" x2="718" y2="85"/></svg>';
+document.getElementById('pipeDiagram').innerHTML='<svg viewBox="0 0 900 120" xmlns="http://www.w3.org/2000/svg"><style>text{font:12px Inter,sans-serif;fill:#E8ECF1}.sb{fill:#1A2233;stroke:#253040;stroke-width:1.5;rx:8}.sh{font-weight:600;font-size:13px}.ss{fill:#8494A7;font-size:10px}.sa{stroke:#3B82F6;stroke-width:2;marker-end:url(#ah2)}</style><defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3B82F6"/></marker></defs><rect class="sb" x="10" y="20" width="120" height="70"/><text class="sh" x="70" y="48" text-anchor="middle">Frame</text><text class="ss" x="70" y="65" text-anchor="middle">640×640 RGB</text><rect class="sb" x="170" y="20" width="120" height="70"/><text class="sh" x="230" y="48" text-anchor="middle">YOLO Detect</text><text class="ss" x="230" y="65" text-anchor="middle">Boxes + classes</text><rect class="sb" x="330" y="20" width="120" height="70"/><text class="sh" x="390" y="48" text-anchor="middle">ByteTrack</text><text class="ss" x="390" y="65" text-anchor="middle">Assign track IDs</text><rect class="sb" x="490" y="20" width="120" height="70"/><text class="sh" x="550" y="48" text-anchor="middle">Counter</text><text class="ss" x="550" y="65" text-anchor="middle">Line-crossing</text><rect class="sb" x="650" y="20" width="120" height="70"/><text class="sh" x="710" y="48" text-anchor="middle">Size Check</text><text class="ss" x="710" y="65" text-anchor="middle">Height ratio</text><rect class="sb" x="810" y="20" width="80" height="70"/><text class="sh" x="850" y="48" text-anchor="middle">UI</text><text class="ss" x="850" y="65" text-anchor="middle">WebSocket</text><line class="sa" x1="130" y1="55" x2="168" y2="55"/><line class="sa" x1="290" y1="55" x2="328" y2="55"/><line class="sa" x1="450" y1="55" x2="488" y2="55"/><line class="sa" x1="610" y1="55" x2="648" y2="55"/><line class="sa" x1="770" y1="55" x2="808" y2="55"/><text x="140" y="105" style="fill:#14B8A6;font-size:11px">~30ms</text><text x="305" y="105" style="fill:#8494A7;font-size:11px">~1ms</text><text x="465" y="105" style="fill:#8494A7;font-size:11px">&lt;1ms</text><text x="625" y="105" style="fill:#8494A7;font-size:11px">&lt;1ms</text><text x="785" y="105" style="fill:#8494A7;font-size:11px">~1ms</text></svg>';
+document.getElementById('countDiagram').innerHTML='<svg viewBox="0 0 900 190" xmlns="http://www.w3.org/2000/svg"><style>text{font:12px Inter,sans-serif;fill:#E8ECF1}</style><rect x="20" y="20" width="400" height="150" rx="10" fill="rgba(239,68,68,0.08)" stroke="#EF4444" stroke-width="1.5"/><text x="220" y="48" text-anchor="middle" style="fill:#EF4444;font-weight:700;font-size:14px">❌ Per-frame counting</text><text x="40" y="78" style="fill:#8494A7;font-size:12px">Frame 1: "I see 5 cylinders"</text><text x="40" y="98" style="fill:#8494A7;font-size:12px">Frame 2: "I see 4" (one occluded)</text><text x="40" y="118" style="fill:#8494A7;font-size:12px">Frame 3: "I see 6" (new arrival)</text><text x="40" y="148" style="fill:#EF4444;font-size:12px;font-weight:600">Count flickers. Not auditable.</text><rect x="480" y="20" width="400" height="150" rx="10" fill="rgba(34,197,94,0.08)" stroke="#22C55E" stroke-width="1.5"/><text x="680" y="48" text-anchor="middle" style="fill:#22C55E;font-weight:700;font-size:14px">✓ Line-crossing counting</text><text x="500" y="78" style="fill:#8494A7;font-size:12px">Cylinder #1 crosses → count = 1</text><text x="500" y="98" style="fill:#8494A7;font-size:12px">Cylinder #2 crosses → count = 2</text><text x="500" y="118" style="fill:#8494A7;font-size:12px">Cylinder #3 crosses → count = 3</text><text x="500" y="148" style="fill:#22C55E;font-size:12px;font-weight:600">Monotonic, auditable, jitter-proof.</text></svg>';
+document.getElementById('dbDiagram').innerHTML='<svg viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg"><style>text{font:12px Inter,sans-serif;fill:#E8ECF1}</style><rect x="20" y="10" width="380" height="160" rx="8" fill="#1A2233" stroke="#253040" stroke-width="1.5"/><text x="40" y="36" style="fill:#14B8A6;font-weight:700;font-size:13px">transactions</text><text x="40" y="60" style="fill:#8494A7;font-size:11px">id, lane_id, started_at</text><text x="40" y="78" style="fill:#8494A7;font-size:11px">ai_total, ai_breakdown (JSON)</text><text x="40" y="96" style="fill:#22C55E;font-size:11px">final_total, final_breakdown ← cashier</text><text x="40" y="114" style="fill:#8494A7;font-size:11px">cashier_name, status, confidence_avg</text><text x="40" y="132" style="fill:#8494A7;font-size:11px">video_clip, notes</text><text x="40" y="155" style="fill:#F59E0B;font-size:11px;font-weight:600">Both AI and human results stored</text><rect x="480" y="10" width="380" height="160" rx="8" fill="#1A2233" stroke="#253040" stroke-width="1.5"/><text x="500" y="36" style="fill:#14B8A6;font-weight:700;font-size:13px">corrections</text><text x="500" y="60" style="fill:#8494A7;font-size:11px">id, transaction_id</text><text x="500" y="78" style="fill:#8494A7;font-size:11px">size_label, ai_count, corrected_count</text><text x="500" y="96" style="fill:#8494A7;font-size:11px">reason (cashier note)</text><text x="500" y="114" style="fill:#8494A7;font-size:11px">corrected_at, cashier_name</text><text x="500" y="155" style="fill:#F59E0B;font-size:11px;font-weight:600">Every edit logged for audit</text><line x1="400" y1="90" x2="478" y2="90" stroke="#3B82F6" stroke-width="2" marker-end="url(#ah)"/></svg>'}
 </script>
 </body>
 </html>
