@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>LPG cylinder counter - architecture spike</title>
+<style>
+:root{--ink:#1B1F1D;--sub:#5B6766;--line:#DDE3E2;--soft:#F4F7F6;--accent:#2D5F8A;--ok:#18794E;--bad:#B42318;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-sizing:border-box;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}html{background:#fff}body{margin:0;background:#fff;color:var(--ink);font:17px/1.65 Charter,"Bitstream Charter","Sitka Text",Cambria,Georgia,serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-underline-offset:2px}code{font:14px/1.5 var(--mono);background:var(--soft);border-radius:4px;padding:1px 5px}pre{font:13.5px/1.55 var(--mono);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 16px}pre code{background:none;padding:0}
+.page{max-width:720px;margin:0 auto;padding:56px 22px 80px}h1{font:600 28px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0 0 6px}
+.by{font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--sub);margin:0 0 32px}
+h2{font:600 19px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:44px 0 10px}p{margin:0 0 14px}ul,ol{margin:0 0 14px;padding-left:22px}li{margin:0 0 8px}
+.run{border:1px solid var(--line);border-radius:10px;margin:18px 0 10px;overflow:hidden}
+.runbar{display:flex;align-items:center;gap:14px;padding:12px 14px;background:var(--soft);border-bottom:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+.runbar button{font:600 14px/1 -apple-system,sans-serif;background:var(--ink);color:#fff;border:0;border-radius:7px;padding:10px 14px;cursor:pointer}
+.runbar button:disabled{opacity:.5}.runbar span{color:var(--sub)}
+#out{list-style:none;margin:0;padding:6px 14px 8px;font:14px/1.45 -apple-system,sans-serif}
+#out li{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);margin:0}#out li:last-child{border-bottom:0}
+.pass{color:var(--ok);font-weight:700}.fail{color:var(--bad);font-weight:700}.empty{color:var(--sub);padding:10px 0}
+.files{font:14px/1.5 var(--mono);list-style:none;padding:0}.files li{margin:0 0 6px}.files span{font-family:Charter,Georgia,serif;font-size:15px;color:var(--sub)}
+.foot{margin-top:52px;padding-top:16px;border-top:1px solid var(--line);font:13px/1.5 -apple-system,sans-serif;color:var(--sub)}
+table{border-collapse:collapse;width:100%;font:15px/1.5 -apple-system,sans-serif;margin:0 0 16px}th{text-align:left;font-weight:600;padding:8px 10px;border-bottom:2px solid var(--ink);font-size:13px}td{padding:8px 10px;border-bottom:1px solid var(--line)}
+@media(max-width:480px){body{font-size:16px}.page{padding:36px 16px 60px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<main class="page">
+<h1>LPG cylinder counter - architecture spike</h1>
+<p class="by">For United Fuel Group, from Josinaldo</p>
+
+<p>I read your Phase 1 spec and started with the part that decides whether the system works in the field: how cylinders are counted. This is a small working spike of the counting logic, the size classification, and the audit trail, with eighteen tests.</p>
+<p>No YOLO training here on purpose. That needs your actual cylinder images under your lighting. What I can show now is the architecture around the model.</p>
+
+<h2>Run the tests</h2>
+<div class="run">
+  <div class="runbar"><button id="run" onclick="runTests()">Run 18 checks</button><span id="status"></span></div>
+  <ul id="out"><li class="empty" style="display:block">Results will show up here.</li></ul>
+</div>
+<p>Or locally: <code>python3 tests/test_counter.py && python3 tests/test_classify.py && python3 tests/test_db.py</code></p>
+
+<h2>Why line-crossing, not per-frame counting</h2>
+<p>Per-frame counting says "I see 5 cylinders right now." But that number jumps when one cylinder occludes another, when the camera shakes, or when new cylinders arrive mid-frame. The cashier would see the count flicker between 4 and 6.</p>
+<p>Line-crossing says "3 cylinders have crossed this line so far." The count only goes up. Each crossing is logged with its track ID, size, and confidence, so it's auditable. If the cashier disagrees, they correct it in the UI, and both numbers are stored.</p>
+<p>I found a real bug while writing the tests: an object that jitters back and forth near the counting line (vibration, wind, unsteady hand) can cross the line twice. The fix is a state machine — the object must be "armed" by being clearly on the before-side first, then counted when it reaches the after-side. Once counted, it can't be counted again. Test five proves this works.</p>
+
+<h2>Handling the hard cases you mentioned</h2>
+<ul>
+  <li><b>Occlusion (cylinders hiding each other):</b> ByteTrack keeps a stable ID through short occlusions — if a cylinder disappears for a few frames and reappears, it gets the same ID back and isn't double-counted. For longer occlusions, the line-crossing approach helps because it only counts the crossing moment, not every frame.</li>
+  <li><b>Dirty or damaged cylinders:</b> the model needs to be trained on images of real dirty cylinders from your plant, not just clean stock photos. I'd spend the first few days on-site collecting varied training data. The height-ratio check in <code>classify_size.py</code> acts as a backup when the visual classifier is uncertain.</li>
+  <li><b>Varying lighting:</b> augmentation during training (brightness, contrast, shadow overlays) helps. A fixed camera position also helps, since the lighting variation at one spot is bounded. I'd add an IR illuminator for night or low-light conditions.</li>
+</ul>
+
+<h2>Size classification</h2>
+<p>Two methods working together. First, the YOLO model itself classifies each detection into 20lb, 30lb, or 100lb — separate classes, not just "cylinder." Second, a height-ratio check: with the camera at a fixed distance, the pixel height of a cylinder maps to its real-world height. If the model says 20lb but the height says 100lb, the system flags it for the cashier. The tests for this are in <code>test_classify.py</code>.</p>
+
+<h2>The audit trail</h2>
+<p>Every transaction stores both the AI result and the cashier's final count. If the cashier corrects the AI, the correction is logged separately with a reason and timestamp. This matters for disputes: "the camera said 12, the cashier confirmed 14, and here's the video clip." The schema is in <code>db/001_schema.sql</code>.</p>
+
+<h2>Architecture on the Jetson</h2>
+<pre><code>CCTV camera (RTSP)
+    │
+    ▼
+Jetson Orin Nano (8GB)
+    ├── YOLOv8n → TensorRT engine (~30 fps at 640×640)
+    ├── ByteTrack (object tracking)
+    ├── CylinderCounter (line-crossing)
+    └── FastAPI server (local)
+            │
+            ▼
+    Cashier touchscreen (browser)
+    ├── Live count display
+    ├── Confirm / correct
+    ├── Transaction history
+    └── Audit log</code></pre>
+<p>The model runs on the Jetson's GPU via TensorRT. The touchscreen connects over the local network to a FastAPI server on the same Jetson. No cloud dependency — everything works if the internet is down.</p>
+
+<h2>What I'd need from you to start</h2>
+<ol>
+  <li><b>Photos or video of real cylinders at the plant.</b> 200-300 images across the three sizes, in the actual lighting. I can collect these on-site or you can send them.</li>
+  <li><b>Camera position.</b> Where the camera will be mounted, and where cylinders pass. This decides the counting line position and the calibration.</li>
+  <li><b>The cashier's workflow.</b> Does one truck arrive, get counted, and leave? Or is it a continuous flow?</li>
+  <li><b>QuickBooks version.</b> Desktop or Online? This shapes the integration path.</li>
+</ol>
+
+<h2>What's in the repo</h2>
+<ul class="files">
+  <li><a href="/src/counter.py">src/counter.py</a> <span>line-crossing counter with arming and jitter protection</span></li>
+  <li><a href="/src/classify_size.py">src/classify_size.py</a> <span>height-ratio classification and model validation</span></li>
+  <li><a href="/src/pipeline.py">src/pipeline.py</a> <span>Jetson pipeline architecture (needs ultralytics on device)</span></li>
+  <li><a href="/db/001_schema.sql">db/001_schema.sql</a> <span>transactions, corrections, audit trail</span></li>
+  <li><a href="/tests/test_counter.py">tests/test_counter.py</a> <span>9 tests: crossing, jitter, occlusion, direction, reset</span></li>
+  <li><a href="/tests/test_classify.py">tests/test_classify.py</a> <span>6 tests: calibration, classification, disagreement</span></li>
+  <li><a href="/tests/test_db.py">tests/test_db.py</a> <span>3 tests: AI vs final counts, correction trail, seeded sizes</span></li>
+</ul>
+
+<p class="foot">No trained model in this repo — it needs your actual cylinder images. The counting and classification logic is tested without one.</p>
+</main>
+<script>
+function runTests(){
+  var btn=document.getElementById('run'),out=document.getElementById('out'),st=document.getElementById('status');
+  btn.disabled=true;st.textContent='Running...';out.innerHTML='';
+  fetch('/api/checks').then(r=>r.json()).then(d=>{
+    if(d.error)throw new Error(d.error);
+    out.innerHTML=d.results.map(r=>'<li><span class="'+(r.pass?'pass':'fail')+'">'+(r.pass?'PASS':'FAIL')+'</span><div><b>'+r.title+'</b></div></li>').join('');
+    st.textContent=d.passed+' of '+d.total+' passed in '+d.ms+' ms';
+  }).catch(e=>{out.innerHTML='<li class="empty">Error: '+e.message+'</li>';st.textContent=''}).then(()=>{btn.disabled=false;btn.textContent='Run again'});
+}
+</script>
+</body>
+</html>
